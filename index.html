@@ -1,0 +1,467 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#07111f" />
+  <meta name="color-scheme" content="dark" />
+  <meta name="description" content="FlyVibe — สแกนหรืออัปโหลด QR เพื่อเข้า Voice Room ได้ทันที" />
+
+  <title>FlyVibe</title>
+
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="icon" href="./favicon.png" type="image/png" />
+  <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
+
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="FlyVibe" />
+
+  <style>
+    :root {
+      --bg: #050b13;
+      --panel: rgba(12, 24, 40, .82);
+      --panel-2: rgba(17, 34, 56, .68);
+      --line: rgba(115, 190, 255, .14);
+      --text: #f5fbff;
+      --muted: #8ca7bf;
+      --cyan: #50e7ff;
+      --blue: #3d7cff;
+      --good: #6cf3c0;
+      --danger: #ff7b8d;
+      --shadow: 0 24px 70px rgba(0,0,0,.42);
+    }
+
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+    html, body {
+      margin: 0;
+      min-height: 100%;
+      background:
+        radial-gradient(circle at 50% 8%, rgba(30, 132, 255, .14), transparent 34%),
+        radial-gradient(circle at 20% 85%, rgba(0, 223, 255, .08), transparent 28%),
+        var(--bg);
+      color: var(--text);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif;
+    }
+
+    body {
+      min-height: 100svh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding:
+        max(18px, env(safe-area-inset-top))
+        16px
+        max(24px, env(safe-area-inset-bottom));
+    }
+
+    .app {
+      width: min(100%, 520px);
+    }
+
+    .brand {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 22px;
+      text-align: center;
+    }
+
+    .brand-mark {
+      width: 88px;
+      height: 88px;
+      border-radius: 26px;
+      box-shadow: 0 0 42px rgba(70, 201, 255, .22);
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: clamp(28px, 8vw, 40px);
+      letter-spacing: -.035em;
+      font-weight: 800;
+    }
+
+    .brand h1 span {
+      background: linear-gradient(90deg, #7cf7ff, #4f7fff);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+
+    .brand p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .card {
+      background: linear-gradient(180deg, rgba(18, 34, 53, .93), rgba(7, 17, 29, .95));
+      border: 1px solid var(--line);
+      border-radius: 28px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+    }
+
+    .scanner-wrap {
+      position: relative;
+      min-height: 300px;
+      background: #02070d;
+    }
+
+    #reader {
+      width: 100%;
+      min-height: 300px;
+    }
+
+    #reader video,
+    #reader img {
+      width: 100% !important;
+      border-radius: 0 !important;
+      object-fit: cover;
+    }
+
+    #reader__dashboard_section_swaplink,
+    #reader__dashboard_section_csr span,
+    #reader__status_span {
+      color: var(--muted) !important;
+    }
+
+    #reader button {
+      border: 0 !important;
+      border-radius: 12px !important;
+      padding: 10px 14px !important;
+      background: rgba(56, 123, 255, .18) !important;
+      color: #dff7ff !important;
+      cursor: pointer;
+    }
+
+    .frame {
+      position: absolute;
+      inset: 50% auto auto 50%;
+      transform: translate(-50%, -50%);
+      width: 190px;
+      height: 190px;
+      pointer-events: none;
+      opacity: .95;
+    }
+
+    .frame::before,
+    .frame::after,
+    .frame span::before,
+    .frame span::after {
+      content: "";
+      position: absolute;
+      width: 40px;
+      height: 40px;
+      border-color: var(--cyan);
+      filter: drop-shadow(0 0 10px rgba(80,231,255,.55));
+    }
+
+    .frame::before { left: 0; top: 0; border-left: 3px solid; border-top: 3px solid; border-radius: 16px 0 0 0; }
+    .frame::after { right: 0; top: 0; border-right: 3px solid; border-top: 3px solid; border-radius: 0 16px 0 0; }
+    .frame span::before { left: 0; bottom: 0; border-left: 3px solid; border-bottom: 3px solid; border-radius: 0 0 0 16px; }
+    .frame span::after { right: 0; bottom: 0; border-right: 3px solid; border-bottom: 3px solid; border-radius: 0 0 16px 0; }
+
+    .content {
+      padding: 20px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    button, .upload {
+      min-height: 54px;
+      border: 1px solid rgba(128, 205, 255, .18);
+      border-radius: 16px;
+      font: inherit;
+      font-weight: 750;
+      cursor: pointer;
+      transition: transform .14s ease, opacity .14s ease, border-color .14s ease;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    button:active, .upload:active { transform: scale(.985); }
+
+    .primary {
+      background: linear-gradient(135deg, #27d7ff, #4776ff);
+      color: #03101a;
+      box-shadow: 0 12px 30px rgba(53, 139, 255, .23);
+      border: 0;
+    }
+
+    .secondary, .upload {
+      background: var(--panel-2);
+      color: var(--text);
+    }
+
+    .upload {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 9px;
+      padding: 0 14px;
+    }
+
+    .upload input { display: none; }
+
+    .status {
+      min-height: 48px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 13px 14px;
+      border-radius: 15px;
+      background: rgba(255,255,255,.035);
+      border: 1px solid rgba(255,255,255,.055);
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+      word-break: break-word;
+    }
+
+    .dot {
+      width: 9px;
+      height: 9px;
+      flex: 0 0 auto;
+      border-radius: 50%;
+      background: #66829a;
+      box-shadow: 0 0 0 5px rgba(102,130,154,.08);
+    }
+
+    .status.good { color: #c9ffeb; border-color: rgba(108,243,192,.18); }
+    .status.good .dot { background: var(--good); box-shadow: 0 0 0 5px rgba(108,243,192,.08); }
+    .status.bad { color: #ffd6dc; border-color: rgba(255,123,141,.18); }
+    .status.bad .dot { background: var(--danger); box-shadow: 0 0 0 5px rgba(255,123,141,.08); }
+
+    .hint {
+      margin-top: 13px;
+      text-align: center;
+      color: #6f89a1;
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+    .install-note {
+      display: none;
+      margin-top: 12px;
+      padding: 13px 15px;
+      border-radius: 15px;
+      background: rgba(50, 120, 255, .08);
+      border: 1px solid rgba(90, 175, 255, .13);
+      color: #b8d5eb;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    @media (max-width: 420px) {
+      .actions { grid-template-columns: 1fr; }
+      .scanner-wrap, #reader { min-height: 280px; }
+      .frame { width: 170px; height: 170px; }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="app">
+    <header class="brand">
+      <img class="brand-mark" src="./icons/apple-touch-icon.png" alt="FlyVibe icon" />
+      <h1>Fly<span>Vibe</span></h1>
+      <p>Scan QR • Upload QR • Join Voice Room</p>
+    </header>
+
+    <section class="card">
+      <div class="scanner-wrap">
+        <div id="reader" aria-label="QR scanner"></div>
+        <div class="frame" aria-hidden="true"><span></span></div>
+      </div>
+
+      <div class="content">
+        <div class="actions">
+          <button id="cameraBtn" class="primary" type="button">เปิดกล้องสแกน QR</button>
+
+          <label class="upload" for="fileInput">
+            อัปโหลดรูป QR
+            <input id="fileInput" type="file" accept="image/*" />
+          </label>
+        </div>
+
+        <div id="status" class="status">
+          <span class="dot"></span>
+          <span>พร้อมใช้งาน — สแกนจากกล้องหรือเลือกรูป QR ได้เลย</span>
+        </div>
+
+        <div id="installNote" class="install-note">
+          iPhone: กด Share → Add to Home Screen เพื่อเปิด FlyVibe แบบเต็มจอเหมือนแอป
+        </div>
+      </div>
+    </section>
+
+    <div class="hint">
+      QR ต้องเป็นลิงก์ http/https เท่านั้น • เมื่ออ่านสำเร็จ FlyVibe จะเปิดห้องให้อัตโนมัติ
+    </div>
+  </main>
+
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <script>
+    (() => {
+      "use strict";
+
+      const readerId = "reader";
+      const cameraBtn = document.getElementById("cameraBtn");
+      const fileInput = document.getElementById("fileInput");
+      const statusEl = document.getElementById("status");
+      const installNote = document.getElementById("installNote");
+
+      let qr = null;
+      let running = false;
+      let redirecting = false;
+
+      const setStatus = (text, type = "") => {
+        statusEl.className = "status" + (type ? " " + type : "");
+        statusEl.innerHTML = '<span class="dot"></span><span></span>';
+        statusEl.querySelector("span:last-child").textContent = text;
+      };
+
+      const isValidHttpUrl = (value) => {
+        try {
+          const url = new URL(value);
+          return url.protocol === "https:" || url.protocol === "http:";
+        } catch {
+          return false;
+        }
+      };
+
+      const goToDecodedUrl = async (decodedText) => {
+        if (redirecting) return;
+
+        const value = String(decodedText || "").trim();
+
+        if (!isValidHttpUrl(value)) {
+          setStatus("อ่าน QR ได้ แต่ไม่ใช่ลิงก์เว็บที่รองรับ", "bad");
+          return;
+        }
+
+        redirecting = true;
+        setStatus("พบลิงก์แล้ว กำลังเปิด Voice Room…", "good");
+
+        try {
+          if (running && qr) {
+            await qr.stop();
+            running = false;
+          }
+        } catch (_) {}
+
+        setTimeout(() => {
+          window.location.href = value;
+        }, 250);
+      };
+
+      const ensureLibrary = () => {
+        if (typeof Html5Qrcode === "undefined") {
+          setStatus("โหลดตัวอ่าน QR ไม่สำเร็จ กรุณาเชื่อมต่ออินเทอร์เน็ตแล้วรีเฟรช", "bad");
+          return false;
+        }
+        return true;
+      };
+
+      const startCamera = async () => {
+        if (!ensureLibrary()) return;
+        if (running) {
+          setStatus("กล้องกำลังทำงานอยู่แล้ว", "good");
+          return;
+        }
+
+        if (!window.isSecureContext) {
+          setStatus("กล้องต้องเปิดผ่าน HTTPS เท่านั้น (GitHub Pages ใช้ HTTPS อยู่แล้ว)", "bad");
+          return;
+        }
+
+        try {
+          qr = qr || new Html5Qrcode(readerId, { verbose: false });
+
+          setStatus("กำลังขอสิทธิ์กล้อง…");
+
+          await qr.start(
+            { facingMode: "environment" },
+            {
+              fps: 10,
+              qrbox: { width: 230, height: 230 },
+              aspectRatio: 1.0,
+              disableFlip: false
+            },
+            goToDecodedUrl,
+            () => {}
+          );
+
+          running = true;
+          cameraBtn.textContent = "กำลังสแกน…";
+          setStatus("เล็งกล้องไปที่ QR Code", "good");
+        } catch (err) {
+          console.error(err);
+          const msg = String(err && err.message ? err.message : err);
+
+          if (/permission|notallowed|denied/i.test(msg)) {
+            setStatus("ไม่สามารถเปิดกล้องได้ — กรุณาอนุญาต Camera ให้ Safari/Browser แล้วลองใหม่", "bad");
+          } else {
+            setStatus("เปิดกล้องไม่สำเร็จ — ลองอัปโหลดรูป QR แทนได้", "bad");
+          }
+        }
+      };
+
+      const scanFile = async (file) => {
+        if (!ensureLibrary() || !file) return;
+
+        try {
+          if (running && qr) {
+            await qr.stop().catch(() => {});
+            running = false;
+          }
+
+          qr = qr || new Html5Qrcode(readerId, { verbose: false });
+          setStatus("กำลังอ่าน QR จากรูป…");
+
+          const decodedText = await qr.scanFile(file, true);
+          await goToDecodedUrl(decodedText);
+        } catch (err) {
+          console.error(err);
+          setStatus("ไม่พบ QR ที่อ่านได้ในรูปนี้ ลองเลือกรูปที่ชัดขึ้น", "bad");
+        } finally {
+          fileInput.value = "";
+        }
+      };
+
+      cameraBtn.addEventListener("click", startCamera);
+
+      fileInput.addEventListener("change", (event) => {
+        const file = event.target.files && event.target.files[0];
+        if (file) scanFile(file);
+      });
+
+      const isiOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+      const isStandalone =
+        window.matchMedia("(display-mode: standalone)").matches ||
+        window.navigator.standalone === true;
+
+      if (isiOS && !isStandalone) {
+        installNote.style.display = "block";
+      }
+
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => {
+          navigator.serviceWorker.register("./service-worker.js").catch(console.error);
+        });
+      }
+    })();
+  </script>
+</body>
+</html>
